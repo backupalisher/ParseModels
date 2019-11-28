@@ -32,6 +32,8 @@ public class HPLaserJet500MFPM525 {
             Element serialNumber = configurationPage.select("strong[id=SerialNumber]").first();
             Element adfCycles = configurationPage.select("strong[id=ADFMaintenance]").first();
             Element engineCycles = configurationPage.select("strong[id=EngineCycles]").first();
+            Document usagePage = getPage(url + "/hp/device/InternalPages/Index?id=UsagePage");
+            Element scanCycles = usagePage.select("td[id=UsagePage.ScanCountsDestinationTable.GrandTotal.Value]").first();
 
             JSONObject obj = new JSONObject();
             JSONArray arr;
@@ -43,6 +45,7 @@ public class HPLaserJet500MFPM525 {
                 obj.put("serialNumber", serialNumber.text());
                 obj.put("status", status.text());
                 obj.put("printCycles", engineCycles.text());
+                obj.put("scanCycles", scanCycles.text().replaceAll(",",""));
                 arr_obj = new JSONObject();
                 arr = new JSONArray(new ArrayList<String>());
 
