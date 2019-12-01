@@ -8,6 +8,7 @@ import javax.net.ssl.*;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.KeyManagementException;
@@ -17,14 +18,17 @@ import java.util.ArrayList;
 
 public class HPLaserJet500MFPM525 {
     //HP LaserJet 500 MFP M525
+    private static JSONObject jsonObject = null;
+
     public static JSONObject parser(String url) throws KeyManagementException, NoSuchAlgorithmException {
         JSONObject jsonMessage = null;
         Document page;
 
-//        GetPageHttps getPageHttps = new GetPageHttps();
         page = getPage(url);
 
-        if (page != null) {
+        if (jsonObject != null) {
+            return jsonObject;
+        } else if (page != null) {
             Element status = page.select("span[id=MachineStatus]").first();
             Element cartridge = page.select("span[id=SupplyGauge0]").first();
             Document configurationPage = getPage(url + "/hp/device/InternalPages/Index?id=ConfigurationPage");
@@ -66,6 +70,7 @@ public class HPLaserJet500MFPM525 {
     }
 
     private static Document getPage(String link) throws KeyManagementException, NoSuchAlgorithmException {
+        jsonObject = null;
         // Create a trust manager that does not validate certificate chains
         TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
             public java.security.cert.X509Certificate[] getAcceptedIssuers() {
@@ -95,8 +100,9 @@ public class HPLaserJet500MFPM525 {
             URL url = new URL(link);
             URLConnection con = url.openConnection();
             con.setConnectTimeout(2000);
-            Reader reader = new InputStreamReader(con.getInputStream());
-            if (reader != null) {
+            int status = ((HttpURLConnection) con).getResponseCode();
+            if (status == 200) {
+                Reader reader = new InputStreamReader(con.getInputStream());
                 while (true) {
                     int ch = reader.read();
                     if (ch == -1) {
@@ -104,6 +110,10 @@ public class HPLaserJet500MFPM525 {
                     }
                     html += String.valueOf((char) ch);
                 }
+            } else {
+                jsonObject.put("device_error",status);
+                jsonObject.put("error","");
+                System.out.println(jsonObject.toString());
             }
         } catch (IOException e) {
             e.printStackTrace();
